@@ -37,11 +37,11 @@ botellas, recuperás una vida extra. El puntaje combina distancia y botellas; la
 velocidad y la densidad de obstáculos aumentan con el tiempo. El récord queda
 guardado en `localStorage`.
 
-El recorrido infinito cambia visualmente cada 750 metros:
-
-1. Centro Histórico (Cabildo y arquitectura colonial).
-2. Nueva Córdoba (torres, pendientes y ritmo urbano).
-3. Güemes y La Cañada (casas bajas, tipas, puentes y ambiente nocturno).
+El primer recorrido atraviesa el Centro Histórico y La Cañada. A los 375
+metros guarda un checkpoint; a los 750 metros Fernet Man llega al edificio de
+Devin Conf, cuyas puertas se abren antes de mostrar el resultado y las botellas
+recogidas. Nueva Córdoba y Güemes están definidos como las siguientes
+variaciones visuales del juego.
 
 ## Arquitectura
 

@@ -95,6 +95,17 @@ register("lamp", () => {
   group.add(mesh(geometries.sphere, materials.yellow, [.24, .24, .24], [0, 3.6, 0]));
   return group;
 });
+register("devinConf", () => {
+  const group = new THREE.Group();
+  group.add(mesh(geometries.box, materials.black, [18, 10, 7], [0, 5, 0]));
+  group.add(mesh(geometries.box, materials.glass, [16, 8, .3], [0, 5, -3.65]));
+  group.add(mesh(geometries.box, materials.labelGold, [14, 1.2, .35], [0, 9, -3.9]));
+  const doorLeft = mesh(geometries.box, materials.glass, [2.7, 5.2, .4], [-1.42, 2.6, -3.9]);
+  const doorRight = mesh(geometries.box, materials.glass, [2.7, 5.2, .4], [1.42, 2.6, -3.9]);
+  group.add(doorLeft, doorRight);
+  group.userData.doors = [doorLeft, doorRight];
+  return group;
+});
 
 function obstacle(type) {
   const group = new THREE.Group();
@@ -150,6 +161,7 @@ export const ASSETS = Object.freeze({
   },
   makeTree: () => clone("tipa"),
   makeLamp: () => clone("lamp"),
+  makeConference: () => clone("devinConf"),
   makeObstacle: (type) => obstacle(type),
   makeCollectible: (glass) => collectible(glass),
   makeRoadSegment: () => mesh(geometries.box, materials.lane, [.12, .025, 3.8])

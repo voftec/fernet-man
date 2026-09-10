@@ -9,6 +9,9 @@ const CONFIG = Object.freeze({
   initialSpeed: 18,
   maxSpeed: 37,
   fixedStep: 1 / 60,
+  levelLength: 750,
+  checkpoint: 375,
+  levelTime: 90,
   colors: {
     asphalt: 0x252729, lane: 0xe8d6a6, curb: 0xb04d2a, night: 0x11151c,
     fernet: 0x5c2b16, label: 0xbd3924, gold: 0xf2a43a
@@ -20,7 +23,8 @@ const ui = {
   cans: document.querySelector("#cans"), lives: document.querySelector("#lives"),
   overlay: document.querySelector("#overlay"), overlayTitle: document.querySelector("#overlay-title"),
   overlayMessage: document.querySelector("#overlay-message"), shout: document.querySelector("#shout"),
-  stage: document.querySelector("#stage"), progress: document.querySelector("#progress")
+  stage: document.querySelector("#stage"), progress: document.querySelector("#progress"),
+  health: document.querySelector("#health"), timer: document.querySelector("#timer")
 };
 
 const LEVELS = [
@@ -91,7 +95,7 @@ world.add(box(1, .25, CONFIG.roadLength, materials.curb, 6, -.2, -38));
 world.add(box(34, .2, CONFIG.roadLength, materials.grass, -23, -.3, -38));
 world.add(box(34, .2, CONFIG.roadLength, materials.grass, 23, -.3, -38));
 
-const movingWorld = { stripes: [], scenery: [], obstacles: [], pickups: [] };
+const movingWorld = { stripes: [], scenery: [], obstacles: [], pickups: [], landmarks: [] };
 const pools = { obstacles: new Map(), pickups: new Map() };
 for (let i = 0; i < 16; i++) {
   const z = -i * 10 - 3;
@@ -188,10 +192,11 @@ playerParts.label.rotation.x = Math.PI / 2;
 playerParts.head.rotation.x = Math.PI / 2;
 
 const state = {
-  mode: "title", score: 0, distance: 0, cans: 0, lives: 3, speed: CONFIG.initialSpeed,
+  mode: "title", score: 0, distance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
   lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
   spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
-  lastTime: performance.now(), accumulator: 0, level: 0, nextExtraLife: 25, stumble: 0
+  lastTime: performance.now(), accumulator: 0, level: 0, nextExtraLife: 25, stumble: 0,
+  timeLeft: CONFIG.levelTime, checkpointReached: false, conferenceSpawned: false
 };
 
 const highScoreKey = "fernet-man-high-score";
@@ -202,9 +207,11 @@ function updateHud() {
   ui.score.textContent = Math.floor(state.score);
   ui.distance.textContent = `${Math.floor(state.distance)} m`;
   ui.cans.textContent = state.cans;
-  ui.lives.textContent = "♥".repeat(Math.max(0, state.lives)) + "♡".repeat(Math.max(0, 3 - state.lives));
+  ui.health.textContent = "♥".repeat(Math.max(0, state.health)) + "♡".repeat(Math.max(0, 3 - state.health));
+  ui.lives.textContent = state.lives;
+  ui.timer.textContent = Math.max(0, Math.ceil(state.timeLeft));
   ui.stage.textContent = `NIVEL ${state.level + 1} — ${LEVELS[state.level].name}`;
-  ui.progress.style.width = `${(state.distance % 750) / 7.5}%`;
+  ui.progress.style.width = `${Math.min(100, state.distance / CONFIG.levelLength * 100)}%`;
 }
 function showOverlay(title, message) {
   ui.overlayTitle.textContent = title;
@@ -212,8 +219,8 @@ function showOverlay(title, message) {
   ui.overlay.classList.add("visible");
 }
 function hideOverlay() { ui.overlay.classList.remove("visible"); }
-function shout() {
-  ui.shout.textContent = shoutLines[Math.floor(Math.random() * shoutLines.length)];
+function shout(message) {
+  ui.shout.textContent = message || shoutLines[Math.floor(Math.random() * shoutLines.length)];
   ui.shout.classList.remove("show");
   void ui.shout.offsetWidth;
   ui.shout.classList.add("show");
@@ -223,10 +230,16 @@ function resetGame() {
   for (const bucket of [...pools.obstacles.values(), ...pools.pickups.values()])
     for (const item of bucket) item.visible = false;
   movingWorld.obstacles.length = 0; movingWorld.pickups.length = 0;
-  Object.assign(state, { mode: "running", score: 0, distance: 0, cans: 0, lives: 3, speed: CONFIG.initialSpeed,
+  for (const landmark of movingWorld.landmarks) {
+    landmark.visible = false;
+    world.remove(landmark);
+  }
+  movingWorld.landmarks.length = 0;
+  Object.assign(state, { mode: "running", score: 0, distance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
     lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
     spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
-    level: 0, nextExtraLife: 25, stumble: 0 });
+    level: 0, nextExtraLife: 25, stumble: 0, timeLeft: CONFIG.levelTime,
+    checkpointReached: false, conferenceSpawned: false });
   applyLevel(0);
   player.position.x = 0;
   hideOverlay();
@@ -348,21 +361,43 @@ function hitPlayer(obstacle) {
     return;
   }
   obstacle.userData.hit = true;
-  state.lives--;
+  state.health--;
   state.invulnerable = 1.25;
   state.stumble = .62;
   state.speed = Math.max(CONFIG.initialSpeed * .65, state.speed * .62);
-  if (state.lives <= 0) {
+  if (state.health <= 0) {
+    state.lives--;
+    if (state.lives > 0) {
+      respawnAtCheckpoint();
+      return;
+    }
     state.mode = "gameover";
     highScore = Math.max(highScore, Math.floor(state.score));
     localStorage.setItem(highScoreKey, String(highScore));
     showOverlay("FIN DEL VIAJE", `Puntaje ${Math.floor(state.score)} · Récord ${highScore}. Presioná Enter para volver a correr`);
   }
 }
+function respawnAtCheckpoint() {
+  state.health = 3;
+  state.distance = state.checkpointReached ? CONFIG.checkpoint : 0;
+  state.timeLeft = Math.max(state.timeLeft, 35);
+  for (const item of [...movingWorld.obstacles, ...movingWorld.pickups]) item.visible = false;
+  movingWorld.obstacles.length = 0;
+  movingWorld.pickups.length = 0;
+  for (const landmark of movingWorld.landmarks) world.remove(landmark);
+  movingWorld.landmarks.length = 0;
+  state.conferenceSpawned = false;
+  state.invulnerable = 1.8;
+  state.stumble = 0;
+  state.targetLane = 1;
+  state.lane = 1;
+  player.position.set(0, 0, CONFIG.playerZ);
+}
 function collectPickup(pickup) {
   if (pickup.userData.collected) return;
   pickup.userData.collected = true;
   state.cans += pickup.userData.glass ? 2 : 1;
+  if (state.cans % 10 === 0) state.health = Math.min(3, state.health + 1);
   if (state.cans >= state.nextExtraLife) {
     state.lives++;
     state.nextExtraLife += 25;
@@ -376,13 +411,20 @@ function update(dt) {
   const cruisingSpeed = Math.min(CONFIG.maxSpeed, CONFIG.initialSpeed + state.distance * .035);
   state.speed = cruisingSpeed * (state.stumble > 0 ? .58 : 1);
   state.distance += state.speed * dt * .45;
+  state.timeLeft -= dt;
   state.score = Math.floor(state.distance) + state.cans * 10;
-  const nextLevel = Math.floor(state.distance / 750) % LEVELS.length;
-  if (nextLevel !== state.level) {
-    state.level = nextLevel;
-    applyLevel(nextLevel);
-    shout();
+  if (!state.checkpointReached && state.distance >= CONFIG.checkpoint) {
+    state.checkpointReached = true;
+    shout("CHECKPOINT");
   }
+  if (!state.conferenceSpawned && state.distance >= 675) spawnConference();
+  if (state.timeLeft <= 0) {
+    state.health = 0;
+    state.lives--;
+    if (state.lives > 0) respawnAtCheckpoint();
+    else finishGame(false);
+  }
+  if (state.distance >= CONFIG.levelLength) finishGame(true);
   state.invulnerable = Math.max(0, state.invulnerable - dt);
   state.stumble = Math.max(0, state.stumble - dt);
   state.slide = Math.max(0, state.slide - dt);
@@ -408,6 +450,13 @@ function update(dt) {
 
   for (const stripe of movingWorld.stripes) { stripe.position.z += state.speed * dt; if (stripe.position.z > 8) stripe.position.z -= 160; }
   for (const scenery of movingWorld.scenery) { scenery.position.z += state.speed * dt; if (scenery.position.z > 15) scenery.position.z -= 150; }
+  for (const landmark of movingWorld.landmarks) {
+    landmark.position.z += state.speed * dt;
+    const open = THREE.MathUtils.clamp((landmark.position.z + 45) / 35, 0, 1);
+    const [leftDoor, rightDoor] = landmark.userData.doors;
+    leftDoor.position.x = -1.42 - open * 2.1;
+    rightDoor.position.x = 1.42 + open * 2.1;
+  }
   for (const bridge of world.children.filter(item => item !== road && item.position.x === -7.2)) { bridge.position.z += state.speed * dt; if (bridge.position.z > 15) bridge.position.z -= 144; }
 
   state.spawnTimer -= dt;
@@ -432,6 +481,28 @@ function update(dt) {
     if (pickup.position.z > 15) { pickup.visible = false; movingWorld.pickups.splice(i, 1); }
   }
   updateHud();
+}
+
+function spawnConference() {
+  const conference = ASSETS.makeConference();
+  conference.position.set(0, 0, -105);
+  conference.userData.doors = conference.children.slice(-2);
+  world.add(conference);
+  movingWorld.landmarks.push(conference);
+  state.conferenceSpawned = true;
+}
+
+function finishGame(won) {
+  if (state.mode !== "running") return;
+  state.mode = won ? "won" : "gameover";
+  highScore = Math.max(highScore, Math.floor(state.score));
+  localStorage.setItem(highScoreKey, String(highScore));
+  showOverlay(
+    won ? "¡GANASTE!" : "FIN DEL VIAJE",
+    won
+      ? `Llegaste a DEVIN CONF con ${state.cans} botellas · Puntaje ${Math.floor(state.score)}`
+      : `Se acabó el tiempo · Puntaje ${Math.floor(state.score)}`
+  );
 }
 
 function render() {
