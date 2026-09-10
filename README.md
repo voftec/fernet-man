@@ -1,9 +1,10 @@
 # Fernet Man
 
-**Fernet Man** es un runner 3D infinito de cámara trasera, inspirado en la
-energía arcade de *Pepsiman* y ambientado en las calles de Córdoba, Argentina.
-Corré sin fin, esquivá autos, peatones, cajones, barreras y baches; juntá
-botellas de fernet y vasos de Fernet con Coca.
+**Fernet Man** es un runner 3D de cámara trasera, inspirado en la energía
+arcade de *Pepsiman* y ambientado en las calles de Córdoba, Argentina. Esquivá
+autos, peatones, cajones, barreras y baches mientras juntás botellas de fernet.
+
+**Jugar:** https://voftec.github.io/fernet-man/
 
 ## Cómo jugar
 
