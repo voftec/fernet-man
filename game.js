@@ -181,16 +181,23 @@ const player = new THREE.Group();
 player.position.set(0, 0, CONFIG.playerZ);
 world.add(player);
 const playerParts = {};
-playerParts.body = box(1.05, 1.7, .65, materials.silver, 0, 1.05, 0);
-playerParts.head = cylinder(.58, 1.25, materials.brown, 0, 2.9, 0, 10);
-playerParts.label = cylinder(.6, .24, materials.red, 0, 3.25, 0, 10);
-playerParts.armL = box(.28, 1.25, .3, materials.silver, -.72, 1.22, 0);
-playerParts.armR = box(.28, 1.25, .3, materials.silver, .72, 1.22, 0);
+playerParts.body = cylinder(.62, 1.55, materials.brown, 0, .92, 0, 10);
+playerParts.shoulders = new THREE.Mesh(new THREE.ConeGeometry(.72, .62, 10), materials.brown);
+playerParts.shoulders.position.set(0, 2.55, 0);
+playerParts.shoulders.rotation.z = Math.PI;
+playerParts.neck = cylinder(.24, .45, materials.brown, 0, 2.62, 0, 10);
+playerParts.head = cylinder(.5, .82, materials.silver, 0, 3.02, 0, 10);
+playerParts.label = cylinder(.65, .38, materials.red, 0, 1.52, 0, 10);
+playerParts.badge = box(.28, .28, .05, materials.yellow, 0, 1.58, -.64);
+playerParts.armL = box(.3, 1.35, .34, materials.silver, -.76, 1.15, 0);
+playerParts.armR = box(.3, 1.35, .34, materials.silver, .76, 1.15, 0);
 playerParts.legL = box(.34, 1.2, .38, materials.black, -.32, 0, 0);
 playerParts.legR = box(.34, 1.2, .38, materials.black, .32, 0, 0);
+playerParts.shoeL = box(.46, .25, .78, materials.white, -.32, 0, -.18);
+playerParts.shoeR = box(.46, .25, .78, materials.white, .32, 0, -.18);
 for (const part of Object.values(playerParts)) player.add(part);
-playerParts.label.rotation.x = Math.PI / 2;
-playerParts.head.rotation.x = Math.PI / 2;
+playerParts.shoulders.castShadow = true;
+playerParts.shoulders.receiveShadow = true;
 
 const state = {
   mode: "title", score: 0, distance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
@@ -456,8 +463,11 @@ function update(dt) {
   playerParts.armR.rotation.x = THREE.MathUtils.lerp(stride, 1.1, slideBlend);
   playerParts.body.scale.y = THREE.MathUtils.lerp(1, .55, slideBlend);
   playerParts.body.rotation.x = slideBlend * .72;
-  playerParts.head.position.y = THREE.MathUtils.lerp(2.9, 2.2, slideBlend);
-  playerParts.label.position.y = THREE.MathUtils.lerp(3.25, 2.55, slideBlend);
+  playerParts.shoulders.position.y = THREE.MathUtils.lerp(2.55, 2.05, slideBlend);
+  playerParts.neck.position.y = THREE.MathUtils.lerp(2.84, 2.24, slideBlend);
+  playerParts.head.position.y = THREE.MathUtils.lerp(3.43, 2.55, slideBlend);
+  playerParts.label.position.y = THREE.MathUtils.lerp(1.71, 1.36, slideBlend);
+  playerParts.badge.position.y = THREE.MathUtils.lerp(1.72, 1.38, slideBlend);
   player.visible = state.invulnerable <= 0 || Math.floor(state.invulnerable * 14) % 2 === 0;
 
   for (const stripe of movingWorld.stripes) { stripe.position.z += state.speed * dt; if (stripe.position.z > 8) stripe.position.z -= 160; }
