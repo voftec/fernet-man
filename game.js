@@ -200,7 +200,7 @@ playerParts.shoulders.castShadow = true;
 playerParts.shoulders.receiveShadow = true;
 
 const state = {
-  mode: "title", score: 0, distance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
+  mode: "title", score: 0, distance: 0, totalDistance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
   lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
   spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
   lastTime: performance.now(), accumulator: 0, level: 0, nextExtraLife: 25, stumble: 0,
@@ -234,6 +234,14 @@ function shout(message) {
   ui.shout.classList.add("show");
 }
 
+function clearActiveObjects() {
+  for (const item of [...movingWorld.obstacles, ...movingWorld.pickups]) item.visible = false;
+  movingWorld.obstacles.length = 0;
+  movingWorld.pickups.length = 0;
+  for (const landmark of movingWorld.landmarks) world.remove(landmark);
+  movingWorld.landmarks.length = 0;
+}
+
 function resetGame() {
   for (const bucket of [...pools.obstacles.values(), ...pools.pickups.values()])
     for (const item of bucket) item.visible = false;
@@ -243,7 +251,7 @@ function resetGame() {
     world.remove(landmark);
   }
   movingWorld.landmarks.length = 0;
-  Object.assign(state, { mode: "running", score: 0, distance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
+  Object.assign(state, { mode: "running", score: 0, distance: 0, totalDistance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
     lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
     spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
     level: 0, nextExtraLife: 25, stumble: 0, timeLeft: CONFIG.levelTime,
@@ -255,7 +263,20 @@ function resetGame() {
 }
 
 function startOrRestart() {
-  if (state.mode !== "running") resetGame();
+  if (state.mode === "levelcomplete") startNextLevel();
+  else if (state.mode !== "running") resetGame();
+}
+function startNextLevel() {
+  clearActiveObjects();
+  Object.assign(state, {
+    mode: "running", distance: 0, health: 3, timeLeft: CONFIG.levelTime,
+    checkpointReached: false, conferenceSpawned: false, invulnerable: 1.2,
+    targetLane: 1, lane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, stumble: 0
+  });
+  state.level++;
+  player.position.set(0, 0, CONFIG.playerZ);
+  applyLevel(state.level);
+  hideOverlay();
 }
 function moveLane(direction) {
   if (state.mode !== "running") return;
@@ -395,11 +416,7 @@ function respawnAtCheckpoint() {
   state.health = 3;
   state.distance = state.checkpointReached ? CONFIG.checkpoint : 0;
   state.timeLeft = Math.max(state.timeLeft, 35);
-  for (const item of [...movingWorld.obstacles, ...movingWorld.pickups]) item.visible = false;
-  movingWorld.obstacles.length = 0;
-  movingWorld.pickups.length = 0;
-  for (const landmark of movingWorld.landmarks) world.remove(landmark);
-  movingWorld.landmarks.length = 0;
+  clearActiveObjects();
   state.conferenceSpawned = false;
   state.invulnerable = 1.8;
   state.stumble = 0;
@@ -424,21 +441,23 @@ function update(dt) {
   state.runTime += dt;
   const cruisingSpeed = Math.min(CONFIG.maxSpeed, CONFIG.initialSpeed + state.distance * .035);
   state.speed = cruisingSpeed * (state.stumble > 0 ? .58 : 1);
-  state.distance += state.speed * dt * .45;
+  const covered = state.speed * dt * .45;
+  state.distance += covered;
+  state.totalDistance += covered;
   state.timeLeft -= dt;
-  state.score = Math.floor(state.distance) + state.cans * 10;
+  state.score = Math.floor(state.totalDistance) + state.cans * 10;
   if (!state.checkpointReached && state.distance >= CONFIG.checkpoint) {
     state.checkpointReached = true;
     shout("CHECKPOINT");
   }
-  if (!state.conferenceSpawned && state.distance >= 675) spawnConference();
+  if (state.level === 0 && !state.conferenceSpawned && state.distance >= 675) spawnConference();
   if (state.timeLeft <= 0) {
     state.health = 0;
     state.lives--;
     if (state.lives > 0) respawnAtCheckpoint();
     else finishGame(false);
   }
-  if (state.distance >= CONFIG.levelLength) finishGame(true);
+  if (state.distance >= CONFIG.levelLength) finishLevel();
   state.invulnerable = Math.max(0, state.invulnerable - dt);
   state.stumble = Math.max(0, state.stumble - dt);
   state.slide = Math.max(0, state.slide - dt);
@@ -523,6 +542,21 @@ function spawnConference() {
   state.conferenceSpawned = true;
 }
 
+function finishLevel() {
+  if (state.mode !== "running") return;
+  if (state.level >= LEVELS.length - 1) {
+    finishGame(true);
+    return;
+  }
+  state.mode = "levelcomplete";
+  showOverlay(
+    state.level === 0 ? "¡GANASTE!" : `NIVEL ${state.level + 1} COMPLETO`,
+    state.level === 0
+      ? `Llegaste a DEVIN CONF con ${state.cans} botellas · Tocá para seguir`
+      : `${state.cans} botellas · Tocá para correr el siguiente nivel`
+  );
+}
+
 function finishGame(won) {
   if (state.mode !== "running") return;
   state.mode = won ? "won" : "gameover";
@@ -531,7 +565,7 @@ function finishGame(won) {
   showOverlay(
     won ? "¡GANASTE!" : "FIN DEL VIAJE",
     won
-      ? `Llegaste a DEVIN CONF con ${state.cans} botellas · Puntaje ${Math.floor(state.score)}`
+      ? `Completaste Córdoba con ${state.cans} botellas · Puntaje ${Math.floor(state.score)}`
       : `Se acabó el tiempo · Puntaje ${Math.floor(state.score)}`
   );
 }
