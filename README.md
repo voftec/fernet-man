@@ -2,8 +2,8 @@
 
 **Fernet Man** es un runner 3D infinito de cámara trasera, inspirado en la
 energía arcade de *Pepsiman* y ambientado en las calles de Córdoba, Argentina.
-Corré sin fin, esquivá autos, peatones, cajones, barreras y baches; juntá latas
-de fernet y vasos de Fernet con Coca.
+Corré sin fin, esquivá autos, peatones, cajones, barreras y baches; juntá
+botellas de fernet y vasos de Fernet con Coca.
 
 ## Cómo jugar
 
@@ -33,9 +33,15 @@ El teclado queda disponible como fallback de desarrollo:
 - **Enter**: empezar o reiniciar.
 
 Hay tres corazones de vida. Cada choque consume un corazón y, al juntar 25
-latas, recuperás una vida extra. El puntaje combina distancia y latas; la
+botellas, recuperás una vida extra. El puntaje combina distancia y botellas; la
 velocidad y la densidad de obstáculos aumentan con el tiempo. El récord queda
 guardado en `localStorage`.
+
+El recorrido infinito cambia visualmente cada 750 metros:
+
+1. Centro Histórico (Cabildo y arquitectura colonial).
+2. Nueva Córdoba (torres, pendientes y ritmo urbano).
+3. Güemes y La Cañada (casas bajas, tipas, puentes y ambiente nocturno).
 
 ## Arquitectura
 

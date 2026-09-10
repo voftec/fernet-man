@@ -19,8 +19,15 @@ const ui = {
   score: document.querySelector("#score"), distance: document.querySelector("#distance"),
   cans: document.querySelector("#cans"), lives: document.querySelector("#lives"),
   overlay: document.querySelector("#overlay"), overlayTitle: document.querySelector("#overlay-title"),
-  overlayMessage: document.querySelector("#overlay-message"), shout: document.querySelector("#shout")
+  overlayMessage: document.querySelector("#overlay-message"), shout: document.querySelector("#shout"),
+  stage: document.querySelector("#stage")
 };
+
+const LEVELS = [
+  { name: "CENTRO HISTÓRICO", sky: 0x11151c, fog: 0x11151c, ground: 0x273426 },
+  { name: "NUEVA CÓRDOBA", sky: 0x182336, fog: 0x182336, ground: 0x273426 },
+  { name: "GÜEMES Y LA CAÑADA", sky: 0x2a1718, fog: 0x2a1718, ground: 0x303326 }
+];
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(CONFIG.colors.night);
@@ -184,7 +191,7 @@ const state = {
   mode: "title", score: 0, distance: 0, cans: 0, lives: 3, speed: CONFIG.initialSpeed,
   lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
   spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
-  lastTime: performance.now(), accumulator: 0
+  lastTime: performance.now(), accumulator: 0, level: 0, nextExtraLife: 25
 };
 
 const highScoreKey = "fernet-man-high-score";
@@ -196,6 +203,7 @@ function updateHud() {
   ui.distance.textContent = `${Math.floor(state.distance)} m`;
   ui.cans.textContent = state.cans;
   ui.lives.textContent = "♥".repeat(Math.max(0, state.lives)) + "♡".repeat(Math.max(0, 3 - state.lives));
+  ui.stage.textContent = `NIVEL ${state.level + 1} — ${LEVELS[state.level].name}`;
 }
 function showOverlay(title, message) {
   ui.overlayTitle.textContent = title;
@@ -216,7 +224,9 @@ function resetGame() {
   movingWorld.obstacles.length = 0; movingWorld.pickups.length = 0;
   Object.assign(state, { mode: "running", score: 0, distance: 0, cans: 0, lives: 3, speed: CONFIG.initialSpeed,
     lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
-    spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8 });
+    spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
+    level: 0, nextExtraLife: 25 });
+  applyLevel(0);
   player.position.x = 0;
   hideOverlay();
   updateHud();
@@ -349,8 +359,12 @@ function hitPlayer(obstacle) {
 function collectPickup(pickup) {
   if (pickup.userData.collected) return;
   pickup.userData.collected = true;
-  state.cans++;
-  if (state.cans > 0 && state.cans % 25 === 0) { state.lives++; shout(); }
+  state.cans += pickup.userData.glass ? 2 : 1;
+  if (state.cans >= state.nextExtraLife) {
+    state.lives++;
+    state.nextExtraLife += 25;
+    shout();
+  }
   if (Math.random() < .1) shout();
   pickup.visible = false;
 }
@@ -358,7 +372,13 @@ function update(dt) {
   state.runTime += dt;
   state.speed = Math.min(CONFIG.maxSpeed, CONFIG.initialSpeed + state.distance * .035);
   state.distance += state.speed * dt * .45;
-  state.score = Math.floor(state.distance) + state.cans;
+  state.score = Math.floor(state.distance) + state.cans * 10;
+  const nextLevel = Math.floor(state.distance / 750) % LEVELS.length;
+  if (nextLevel !== state.level) {
+    state.level = nextLevel;
+    applyLevel(nextLevel);
+    shout();
+  }
   state.invulnerable = Math.max(0, state.invulnerable - dt);
   state.slide = Math.max(0, state.slide - dt);
   state.dash = Math.max(0, state.dash - dt);
@@ -424,6 +444,14 @@ prewarmPools();
 resize();
 updateHud();
 showOverlay("FERNET MAN", "Presioná Enter para correr");
+
+function applyLevel(index) {
+  const level = LEVELS[index];
+  scene.background.setHex(level.sky);
+  scene.fog.color.setHex(level.fog);
+  materials.grass.color.setHex(level.ground);
+  ui.stage.textContent = `NIVEL ${index + 1} — ${level.name}`;
+}
 
 function loop(now) {
   requestAnimationFrame(loop);

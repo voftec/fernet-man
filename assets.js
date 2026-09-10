@@ -4,7 +4,7 @@ const palette = Object.freeze({
   asphalt: 0x252729, cream: 0xd5b58b, brick: 0x983e2d, plaster: 0x75605b,
   fern: 0x5c2b16, red: 0xbd3924, silver: 0xadb4b8, black: 0x16181a,
   glass: 0x4c91a7, yellow: 0xe6a52f, blue: 0x3c79a7, pink: 0xd2606d,
-  wood: 0x9a5a2f, green: 0x273426, white: 0xe8e2d7
+  wood: 0x9a5a2f, green: 0x273426, white: 0xe8e2d7, lane: 0xe8d6a6
 });
 
 const materials = Object.fromEntries(Object.entries(palette).map(([name, color]) => [
@@ -14,6 +14,13 @@ const materials = Object.fromEntries(Object.entries(palette).map(([name, color])
     transparent: name === "glass", opacity: name === "glass" ? .8 : 1
   })
 ]));
+materials.bottleGlass = new THREE.MeshPhysicalMaterial({
+  color: 0x2a160d, roughness: .22, metalness: 0, transmission: .18,
+  transparent: true, opacity: .94, thickness: .35
+});
+materials.labelGold = new THREE.MeshStandardMaterial({
+  color: 0xd9a441, roughness: .55, metalness: .12
+});
 const geometries = {
   box: new THREE.BoxGeometry(1, 1, 1),
   cylinder: new THREE.CylinderGeometry(1, 1, 1, 10),
@@ -121,8 +128,16 @@ function collectible(glass) {
     group.add(mesh(geometries.cylinder, materials.fern, [.52, .06, .52], [0, 2.08, 0]));
     group.add(mesh(geometries.cylinder, materials.red, [.35, .18, .35], [0, 1.65, 0]));
   } else {
-    group.add(mesh(geometries.cylinder, materials.silver, [.38, 1.15, .38], [0, 1.72, 0]));
-    group.add(mesh(geometries.cylinder, materials.red, [.4, .25, .4], [0, 1.98, 0]));
+    const body = mesh(geometries.cylinder, materials.bottleGlass, [.44, 1.35, .44], [0, 1.5, 0]);
+    const shoulder = mesh(geometries.cone, materials.bottleGlass, [.44, .42, .44], [0, 2.38, 0]);
+    shoulder.rotation.z = Math.PI;
+    group.add(body, shoulder);
+    group.add(mesh(geometries.cylinder, materials.bottleGlass, [.2, .55, .2], [0, 2.66, 0]));
+    group.add(mesh(geometries.cylinder, materials.black, [.22, .2, .22], [0, 3.02, 0]));
+    group.add(mesh(geometries.cylinder, materials.red, [.46, .48, .46], [0, 1.62, 0]));
+    group.add(mesh(geometries.box, materials.labelGold, [.46, .15, .48], [0, 1.62, -.42]));
+    group.add(mesh(geometries.box, materials.labelGold, [.15, .46, .48], [0, 1.62, -.42]));
+    group.userData.baseScale = 1;
   }
   return group;
 }
