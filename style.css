@@ -41,7 +41,7 @@ canvas {
   padding: 14px 22px 10px;
   pointer-events: none;
   text-shadow: 2px 2px 0 #22140d;
-  background: linear-gradient(#17100ddd, transparent);
+  background: linear-gradient(#090807ee 0, #17100dbb 62%, transparent);
 }
 
 .hud-title, .brand {
@@ -51,9 +51,26 @@ canvas {
   text-shadow: 3px 3px 0 #552512;
 }
 .hud-title { font-size: clamp(16px, 2.6vw, 29px); }
-.hud-row { display: flex; gap: clamp(12px, 3vw, 38px); flex-wrap: wrap; margin-top: 5px; font-size: clamp(11px, 1.4vw, 17px); }
+.hud-row { display: flex; gap: clamp(12px, 3vw, 38px); align-items: center; margin-top: 5px; font-size: clamp(11px, 1.4vw, 17px); }
 .hud-row strong { color: #ffe0a2; }
-.hud-stage { margin-top: 5px; color: #ce9a68; font-size: 12px; }
+.hud-score { margin-left: auto; }
+.hud-stat { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.bottle-icon {
+  width: 10px; height: 22px; display: inline-block; position: relative;
+  border: 2px solid #d96533; border-radius: 2px 2px 4px 4px;
+  background: linear-gradient(90deg, #31160d, #713619 55%, #261108);
+  box-shadow: 0 0 8px #f19a3c66;
+}
+.bottle-icon::before {
+  content: ""; position: absolute; width: 5px; height: 6px; left: 1px; top: -8px;
+  border: 2px solid #d96533; border-bottom: 0; background: #24110b;
+}
+.hud-progress {
+  display: grid; grid-template-columns: auto minmax(80px, 1fr) auto;
+  align-items: center; gap: 10px; margin-top: 8px; color: #ce9a68; font-size: 11px;
+}
+.track { height: 7px; border: 1px solid #a64f29; background: #120d0a; overflow: hidden; transform: skewX(-12deg); }
+.track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #a83d24, #f4a23a); box-shadow: 0 0 8px #f4a23a; }
 
 #overlay {
   position: absolute;
@@ -106,5 +123,8 @@ h1 { margin: 0 0 10px; font-size: clamp(22px, 4vw, 38px); color: #f6dcad; }
   #game-shell { border-width: 0; }
   #hud { padding: 9px 10px; }
   .hud-row { gap: 7px 15px; }
+  .hud-title { font-size: 15px; }
+  .hud-progress { grid-template-columns: 1fr auto; }
+  .hud-progress .track { grid-column: 1 / -1; grid-row: 2; }
   .card { padding: 24px 15px; }
 }

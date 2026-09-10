@@ -18,12 +18,15 @@
     <div id="hud" aria-live="polite">
       <div class="hud-title">FERNET MAN</div>
       <div class="hud-row">
-        <span>PUNTAJE <strong id="score">0</strong></span>
-        <span>DISTANCIA <strong id="distance">0 m</strong></span>
-        <span>BOTELLAS <strong id="cans">0</strong></span>
-        <span>VIDA <strong id="lives">♥♥♥</strong></span>
+        <span class="hud-stat"><i class="bottle-icon"></i> <strong id="cans">0</strong></span>
+        <span class="hud-stat hud-score">PUNTOS <strong id="score">0</strong></span>
+        <span class="hud-stat">VIDA <strong id="lives">♥♥♥</strong></span>
       </div>
-      <div class="hud-stage" id="stage">NIVEL 1 — CENTRO HISTÓRICO</div>
+      <div class="hud-progress">
+        <span id="stage">NIVEL 1 — CENTRO HISTÓRICO</span>
+        <div class="track"><i id="progress"></i></div>
+        <strong id="distance">0 m</strong>
+      </div>
     </div>
     <div id="shout" aria-hidden="true"></div>
     <section id="overlay" class="visible">

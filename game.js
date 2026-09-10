@@ -20,7 +20,7 @@ const ui = {
   cans: document.querySelector("#cans"), lives: document.querySelector("#lives"),
   overlay: document.querySelector("#overlay"), overlayTitle: document.querySelector("#overlay-title"),
   overlayMessage: document.querySelector("#overlay-message"), shout: document.querySelector("#shout"),
-  stage: document.querySelector("#stage")
+  stage: document.querySelector("#stage"), progress: document.querySelector("#progress")
 };
 
 const LEVELS = [
@@ -191,7 +191,7 @@ const state = {
   mode: "title", score: 0, distance: 0, cans: 0, lives: 3, speed: CONFIG.initialSpeed,
   lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
   spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
-  lastTime: performance.now(), accumulator: 0, level: 0, nextExtraLife: 25
+  lastTime: performance.now(), accumulator: 0, level: 0, nextExtraLife: 25, stumble: 0
 };
 
 const highScoreKey = "fernet-man-high-score";
@@ -204,6 +204,7 @@ function updateHud() {
   ui.cans.textContent = state.cans;
   ui.lives.textContent = "♥".repeat(Math.max(0, state.lives)) + "♡".repeat(Math.max(0, 3 - state.lives));
   ui.stage.textContent = `NIVEL ${state.level + 1} — ${LEVELS[state.level].name}`;
+  ui.progress.style.width = `${(state.distance % 750) / 7.5}%`;
 }
 function showOverlay(title, message) {
   ui.overlayTitle.textContent = title;
@@ -225,7 +226,7 @@ function resetGame() {
   Object.assign(state, { mode: "running", score: 0, distance: 0, cans: 0, lives: 3, speed: CONFIG.initialSpeed,
     lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
     spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
-    level: 0, nextExtraLife: 25 });
+    level: 0, nextExtraLife: 25, stumble: 0 });
   applyLevel(0);
   player.position.x = 0;
   hideOverlay();
@@ -349,6 +350,8 @@ function hitPlayer(obstacle) {
   obstacle.userData.hit = true;
   state.lives--;
   state.invulnerable = 1.25;
+  state.stumble = .62;
+  state.speed = Math.max(CONFIG.initialSpeed * .65, state.speed * .62);
   if (state.lives <= 0) {
     state.mode = "gameover";
     highScore = Math.max(highScore, Math.floor(state.score));
@@ -370,7 +373,8 @@ function collectPickup(pickup) {
 }
 function update(dt) {
   state.runTime += dt;
-  state.speed = Math.min(CONFIG.maxSpeed, CONFIG.initialSpeed + state.distance * .035);
+  const cruisingSpeed = Math.min(CONFIG.maxSpeed, CONFIG.initialSpeed + state.distance * .035);
+  state.speed = cruisingSpeed * (state.stumble > 0 ? .58 : 1);
   state.distance += state.speed * dt * .45;
   state.score = Math.floor(state.distance) + state.cans * 10;
   const nextLevel = Math.floor(state.distance / 750) % LEVELS.length;
@@ -380,15 +384,18 @@ function update(dt) {
     shout();
   }
   state.invulnerable = Math.max(0, state.invulnerable - dt);
+  state.stumble = Math.max(0, state.stumble - dt);
   state.slide = Math.max(0, state.slide - dt);
   state.dash = Math.max(0, state.dash - dt);
   state.jumpVelocity -= 28 * dt;
   state.jumpY += state.jumpVelocity * dt;
   if (state.jumpY < 0) { state.jumpY = 0; state.jumpVelocity = 0; }
   player.position.y = state.jumpY;
+  player.position.z += ((state.stumble > 0 ? CONFIG.playerZ + 2.2 : CONFIG.playerZ) - player.position.z) * Math.min(1, dt * 14);
   state.lane += (state.targetLane - state.lane) * Math.min(1, dt * 13);
   player.position.x = CONFIG.lanes[Math.round(state.lane)] + (state.lane - Math.round(state.lane)) * 3;
   player.rotation.z = (state.targetLane - state.lane) * -.08;
+  player.rotation.x = state.stumble > 0 ? Math.sin(state.stumble * 24) * .2 : 0;
   const stride = Math.sin(state.runTime * 14) * .42;
   playerParts.legL.rotation.x = state.slide > 0 ? -1.2 : stride;
   playerParts.legR.rotation.x = state.slide > 0 ? -1.2 : -stride;
@@ -443,7 +450,7 @@ window.addEventListener("resize", resize);
 prewarmPools();
 resize();
 updateHud();
-showOverlay("FERNET MAN", "Presioná Enter para correr");
+showOverlay("FERNET MAN", "Tocá para correr");
 
 function applyLevel(index) {
   const level = LEVELS[index];
