@@ -96,7 +96,7 @@ canvas {
 .brand span { color: #ded9cb; }
 h1 { margin: 0 0 10px; font-size: clamp(22px, 4vw, 38px); color: #f6dcad; }
 #overlay-message { min-height: 1.4em; margin: 0 0 20px; color: #ffbb63; font-size: 18px; }
-.hint { margin: 8px 0 0; color: #cbbda9; font-size: 12px; line-height: 1.5; }
+.hint { margin: 8px auto 0; max-width: 100%; color: #cbbda9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 #shout {
   position: absolute;
   z-index: 4;
@@ -122,9 +122,11 @@ h1 { margin: 0 0 10px; font-size: clamp(22px, 4vw, 38px); color: #f6dcad; }
 @media (max-width: 600px) {
   #game-shell { border-width: 0; }
   #hud { padding: 9px 10px; }
-  .hud-row { gap: 7px 15px; }
+  .hud-row { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; font-size: 10px; }
+  .hud-score { margin-left: 0; justify-self: center; }
   .hud-title { font-size: 15px; }
   .hud-progress { grid-template-columns: 1fr auto; }
   .hud-progress .track { grid-column: 1 / -1; grid-row: 2; }
-  .card { padding: 24px 15px; }
+  .card { width: 86%; padding: 24px 12px; }
+  .hint { font-size: 10px; }
 }
