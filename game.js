@@ -154,13 +154,14 @@ function createApartment(x, z) {
 }
 function addScenery() {
   const z = -25 - Math.random() * 90;
-  const variants = ["casa", "apartamento", "cabildo", "capuchinos"];
-  const left = ASSETS.makeBuilding(variants[Math.floor(Math.random() * variants.length)]);
-  const right = ASSETS.makeBuilding(Math.random() < .2 ? "capuchinos" : "apartamento");
+  const left = ASSETS.makeStreetCluster(Math.floor(Math.random() * 3));
+  const right = ASSETS.makeStreetCluster(Math.floor(Math.random() * 3));
   const leftTree = ASSETS.makeTree();
   const rightTree = ASSETS.makeTree();
-  left.position.set(-12, 0, z);
-  right.position.set(12, 0, z - 4);
+  left.position.set(-13, 0, z);
+  right.position.set(13, 0, z - 4);
+  left.rotation.y = Math.PI / 2;
+  right.rotation.y = -Math.PI / 2;
   leftTree.position.set(-7.3, 0, z + 4);
   rightTree.position.set(7.3, 0, z + 1);
   world.add(left, right, leftTree, rightTree);
@@ -329,7 +330,7 @@ function createCan(lane, z, glass = false) {
   movingWorld.pickups.push(group);
 }
 function prewarmPools() {
-  for (const type of ["car", "person", "crate", "low", "high", "hole"]) {
+  for (const type of ["car", "crossTruck", "person", "crate", "low", "high", "hole"]) {
     for (let i = 0; i < 6; i++) acquireFromPool(pools.obstacles, type, () => ASSETS.makeObstacle(type));
   }
   for (const glass of [false, true]) {
@@ -338,9 +339,14 @@ function prewarmPools() {
 }
 
 function spawnObstacle() {
-  const types = ["car", "person", "crate", "low", "high", "hole"];
+  const types = ["car", "car", "person", "crate", "low", "high", "hole", "crossTruck"];
   const type = types[Math.floor(Math.random() * types.length)];
-  createObstacle(type, Math.floor(Math.random() * 3), -105);
+  createObstacle(type, Math.floor(Math.random() * 3), type === "crossTruck" ? -48 : -105);
+  if (type === "crossTruck") {
+    const truck = movingWorld.obstacles.at(-1);
+    truck.position.x = Math.random() < .5 ? -9 : 9;
+    truck.userData.crossDirection = truck.position.x < 0 ? 1 : -1;
+  }
   if (Math.random() < .22) createObstacle("crate", Math.floor(Math.random() * 3), -111);
 }
 function spawnPickup() {
@@ -355,7 +361,8 @@ function hitPlayer(obstacle) {
   const { type } = obstacle.userData;
   const airborne = state.jumpY > .75;
   const sliding = state.slide > 0;
-  const avoided = (type === "low" || type === "hole") && airborne || type === "high" && sliding;
+  const avoided = (type === "low" || type === "hole") && airborne
+    || (type === "high" || type === "crossTruck") && sliding;
   if (avoided || (type === "crate" && state.dash > 0)) {
     if (type === "crate" && state.dash > 0) { obstacle.userData.hit = true; obstacle.visible = false; }
     return;
@@ -432,20 +439,25 @@ function update(dt) {
   state.jumpVelocity -= 28 * dt;
   state.jumpY += state.jumpVelocity * dt;
   if (state.jumpY < 0) { state.jumpY = 0; state.jumpVelocity = 0; }
-  player.position.y = state.jumpY;
+  const runBob = state.jumpY === 0 && state.stumble <= 0 ? Math.abs(Math.sin(state.runTime * 14)) * .08 : 0;
+  player.position.y = state.jumpY + runBob;
   player.position.z += ((state.stumble > 0 ? CONFIG.playerZ + 2.2 : CONFIG.playerZ) - player.position.z) * Math.min(1, dt * 14);
   state.lane += (state.targetLane - state.lane) * Math.min(1, dt * 13);
   player.position.x = CONFIG.lanes[Math.round(state.lane)] + (state.lane - Math.round(state.lane)) * 3;
   player.rotation.z = (state.targetLane - state.lane) * -.08;
   player.rotation.x = state.stumble > 0 ? Math.sin(state.stumble * 24) * .2 : 0;
   const stride = Math.sin(state.runTime * 14) * .42;
-  playerParts.legL.rotation.x = state.slide > 0 ? -1.2 : stride;
-  playerParts.legR.rotation.x = state.slide > 0 ? -1.2 : -stride;
-  playerParts.armL.rotation.x = state.slide > 0 ? 1.1 : -stride;
-  playerParts.armR.rotation.x = state.slide > 0 ? 1.1 : stride;
-  playerParts.body.scale.y = state.slide > 0 ? .55 : 1;
-  playerParts.head.position.y = state.slide > 0 ? 2.2 : 2.9;
-  playerParts.label.position.y = state.slide > 0 ? 2.55 : 3.25;
+  const slideBlend = state.slide > 0
+    ? Math.min(1, (.72 - state.slide) / .12, state.slide / .12)
+    : 0;
+  playerParts.legL.rotation.x = THREE.MathUtils.lerp(stride, -1.2, slideBlend);
+  playerParts.legR.rotation.x = THREE.MathUtils.lerp(-stride, -1.2, slideBlend);
+  playerParts.armL.rotation.x = THREE.MathUtils.lerp(-stride, 1.1, slideBlend);
+  playerParts.armR.rotation.x = THREE.MathUtils.lerp(stride, 1.1, slideBlend);
+  playerParts.body.scale.y = THREE.MathUtils.lerp(1, .55, slideBlend);
+  playerParts.body.rotation.x = slideBlend * .72;
+  playerParts.head.position.y = THREE.MathUtils.lerp(2.9, 2.2, slideBlend);
+  playerParts.label.position.y = THREE.MathUtils.lerp(3.25, 2.55, slideBlend);
   player.visible = state.invulnerable <= 0 || Math.floor(state.invulnerable * 14) % 2 === 0;
 
   for (const stripe of movingWorld.stripes) { stripe.position.z += state.speed * dt; if (stripe.position.z > 8) stripe.position.z -= 160; }
@@ -469,8 +481,17 @@ function update(dt) {
   for (let i = movingWorld.obstacles.length - 1; i >= 0; i--) {
     const obstacle = movingWorld.obstacles[i];
     obstacle.position.z += state.speed * dt;
+    if (obstacle.userData.type === "crossTruck") {
+      obstacle.position.x += obstacle.userData.crossDirection * state.speed * dt * .2;
+      obstacle.userData.lane = THREE.MathUtils.clamp(
+        Math.round((obstacle.position.x - CONFIG.lanes[0]) / 3), 0, 2
+      );
+    }
     obstacle.scale.setScalar(THREE.MathUtils.clamp(1 + (obstacle.position.z + 100) / 240, .85, 1.35));
-    if (obstacle.position.z > 4 && obstacle.position.z < 7 && laneNear(obstacle)) hitPlayer(obstacle);
+    const aligned = obstacle.userData.type === "crossTruck"
+      ? Math.abs(obstacle.position.x - player.position.x) < 3.5
+      : laneNear(obstacle);
+    if (obstacle.position.z > 4 && obstacle.position.z < 7 && aligned) hitPlayer(obstacle);
     if (obstacle.position.z > 15) { obstacle.visible = false; movingWorld.obstacles.splice(i, 1); }
   }
   for (let i = movingWorld.pickups.length - 1; i >= 0; i--) {

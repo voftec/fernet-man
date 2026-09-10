@@ -114,6 +114,14 @@ function obstacle(type) {
     group.add(mesh(geometries.box, materials.glass, [1.6, .6, 1.2], [0, 1.25, -.2]));
     group.add(mesh(geometries.cylinder, materials.black, [.34, .18, .34], [-.82, .18, 1.05]));
     group.add(mesh(geometries.cylinder, materials.black, [.34, .18, .34], [.82, .18, 1.05]));
+  } else if (type === "crossTruck") {
+    group.add(mesh(geometries.box, materials.red, [5.8, 1.2, 2.3], [0, 2.7, 0]));
+    group.add(mesh(geometries.box, materials.cream, [1.8, 2.3, 2.3], [2, 1.8, 0]));
+    group.add(mesh(geometries.box, materials.glass, [1.3, .72, 2.38], [2.1, 2.4, 0]));
+    for (const x of [-2, 2]) {
+      group.add(mesh(geometries.cylinder, materials.black, [.5, .28, .5], [x, .62, -.85]));
+      group.add(mesh(geometries.cylinder, materials.black, [.5, .28, .5], [x, .62, .85]));
+    }
   } else if (type === "person") {
     group.add(mesh(geometries.cylinder, materials.blue, [.32, 1.7, .32], [0, 1.65, 0]));
     group.add(mesh(geometries.sphere, materials.cream, [.38, .38, .38], [0, 2.65, 0]));
@@ -129,6 +137,33 @@ function obstacle(type) {
   } else {
     group.add(mesh(geometries.cylinder, materials.black, [1.5, .06, 1.5], [0, .03, 0]));
   }
+  return group;
+}
+
+function streetCluster(variant = 0) {
+  const group = new THREE.Group();
+  const buildingNames = variant % 3 === 0
+    ? ["casa", "casa", "kiosco"]
+    : variant % 3 === 1
+      ? ["apartamento", "casa"]
+      : ["casa", "apartamento", "kiosco"];
+  buildingNames.forEach((name, index) => {
+    const building = clone(name);
+    building.scale.setScalar(name === "apartamento" ? .8 : .62);
+    building.position.set((index - (buildingNames.length - 1) / 2) * 5.2, 0, 0);
+    group.add(building);
+  });
+  for (let x = -6.5; x <= 6.5; x += 1.05) {
+    group.add(mesh(geometries.box, materials.black, [.08, 1.55, .08], [x, .78, -3.05]));
+  }
+  group.add(mesh(geometries.box, materials.black, [13.2, .1, .1], [0, 1.5, -3.05]));
+  group.add(mesh(geometries.box, materials.black, [13.2, .1, .1], [0, .72, -3.05]));
+  if (variant % 2 === 0) {
+    group.add(mesh(geometries.box, materials.red, [4.2, .22, 1.5], [3.6, 3.45, -3.1]));
+    group.add(mesh(geometries.box, materials.yellow, [.8, 1.1, .12], [-4.6, 2.4, -3.18]));
+  }
+  group.add(clone("tipa"));
+  group.children.at(-1).position.set(-5.8, 0, -4);
   return group;
 }
 
@@ -162,6 +197,7 @@ export const ASSETS = Object.freeze({
   makeTree: () => clone("tipa"),
   makeLamp: () => clone("lamp"),
   makeConference: () => clone("devinConf"),
+  makeStreetCluster: (variant) => streetCluster(variant),
   makeObstacle: (type) => obstacle(type),
   makeCollectible: (glass) => collectible(glass),
   makeRoadSegment: () => mesh(geometries.box, materials.lane, [.12, .025, 3.8])

@@ -42,3 +42,24 @@ una.
 - Reemplazar latas por botellas de fernet y la máquina expendedora por la
   entrada de Devin Conf.
 - Priorizar siluetas cordobesas reconocibles y materiales propios.
+
+## Gramática urbana de Córdoba
+
+- Frentes continuos sobre la línea municipal, mezclados con casas retiradas
+  detrás de rejas metálicas.
+- Veredas angostas y heterogéneas, cordones marcados, árboles que interrumpen
+  el plano peatonal y cableado aéreo en barrios residenciales.
+- Medianeras expuestas, pintura envejecida y convivencia de casonas con torres.
+- En Nueva Córdoba predominan balcones, hormigón, comercios en planta baja,
+  calles con pendiente y alta densidad.
+- En Güemes predominan casas bajas del siglo XIX reutilizadas como galerías,
+  patios, pasajes, murales, toldos y actividad nocturna.
+- La Cañada aporta piedra, puentes cortos, barandas, agua encauzada y tipas.
+- Los módulos del juego combinan fachada, retiro, reja, toldo, árbol,
+  cartelería y mobiliario; repetir piezas no debe repetir la composición.
+
+Fuentes adicionales:
+
+- [Municipalidad de Córdoba, Pueblo Güemes](https://turismo.cordoba.gob.ar/barrio-pueblo-guemes/)
+- [Registro fotográfico de Nueva Córdoba](http://museoprivadodeartefotografico.blogspot.com/2022/02/nueva-cordoba-2-un-recorrido-por-este.html)
+- [Córdoba en fotografías, Nueva Córdoba](https://cordobaenfotografias.blogspot.com/2011/04/el-barrio-de-nueva-cordoba.html)
