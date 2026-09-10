@@ -25,8 +25,26 @@ const geometries = {
   box: new THREE.BoxGeometry(1, 1, 1),
   cylinder: new THREE.CylinderGeometry(1, 1, 1, 10),
   sphere: new THREE.SphereGeometry(1, 10, 8),
-  cone: new THREE.ConeGeometry(1, 1, 8)
+  cone: new THREE.ConeGeometry(1, 1, 8),
+  plane: new THREE.PlaneGeometry(1, 1)
 };
+const signCanvas = document.createElement("canvas");
+signCanvas.width = 1024;
+signCanvas.height = 192;
+const signContext = signCanvas.getContext("2d");
+signContext.fillStyle = "#120e0c";
+signContext.fillRect(0, 0, signCanvas.width, signCanvas.height);
+signContext.strokeStyle = "#f1a341";
+signContext.lineWidth = 12;
+signContext.strokeRect(8, 8, signCanvas.width - 16, signCanvas.height - 16);
+signContext.fillStyle = "#f6dfb1";
+signContext.font = "900 104px Arial";
+signContext.textAlign = "center";
+signContext.textBaseline = "middle";
+signContext.fillText("DEVIN CONF", signCanvas.width / 2, signCanvas.height / 2 + 4);
+const signMaterial = new THREE.MeshBasicMaterial({
+  map: new THREE.CanvasTexture(signCanvas), transparent: false
+});
 const mesh = (geometry, material, scale, position = [0, 0, 0]) => {
   const item = new THREE.Mesh(geometry, material);
   item.scale.set(...scale);
@@ -99,7 +117,7 @@ register("devinConf", () => {
   const group = new THREE.Group();
   group.add(mesh(geometries.box, materials.black, [18, 10, 7], [0, 5, 0]));
   group.add(mesh(geometries.box, materials.glass, [16, 8, .3], [0, 5, -3.65]));
-  group.add(mesh(geometries.box, materials.labelGold, [14, 1.2, .35], [0, 9, -3.9]));
+  group.add(mesh(geometries.plane, signMaterial, [13, 1.8, 1], [0, 8.8, -4.01]));
   const doorLeft = mesh(geometries.box, materials.glass, [2.7, 5.2, .4], [-1.42, 2.6, -3.9]);
   const doorRight = mesh(geometries.box, materials.glass, [2.7, 5.2, .4], [1.42, 2.6, -3.9]);
   group.add(doorLeft, doorRight);
