@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fernet Man — Córdoba Capital</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main id="game-shell">
+    <div id="hud" aria-live="polite">
+      <div class="hud-title">FERNET MAN</div>
+      <div class="hud-row">
+        <span>PUNTAJE <strong id="score">0</strong></span>
+        <span>DISTANCIA <strong id="distance">0 m</strong></span>
+        <span>FERNET <strong id="cans">0</strong></span>
+        <span>VIDA <strong id="lives">♥♥♥</strong></span>
+      </div>
+      <div class="hud-stage">NIVEL 1 — CÓRDOBA CAPITAL</div>
+    </div>
+    <div id="shout" aria-hidden="true"></div>
+    <section id="overlay" class="visible">
+      <div class="card">
+        <div class="brand">FERNET<br><span>MAN</span></div>
+        <h1 id="overlay-title">FERNET MAN</h1>
+        <p id="overlay-message">Presioná Enter para correr</p>
+        <p class="hint">A/D o ←/→: cambiar carril · W/↑/Espacio: saltar · S/↓: deslizarse</p>
+        <p class="hint">P: pausa · Shift: dash rompe cajas · Juntá 25 latas para ganar una vida</p>
+      </div>
+    </section>
+    <div id="touch-help">Deslizá el dedo para moverte</div>
+  </main>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
