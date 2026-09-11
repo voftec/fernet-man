@@ -29,14 +29,14 @@ const ui = {
 };
 
 const LEVELS = [
-  { name: "CENTRO HISTÓRICO", sky: 0x11151c, fog: 0x11151c, ground: 0x273426 },
-  { name: "NUEVA CÓRDOBA", sky: 0x182336, fog: 0x182336, ground: 0x273426 },
-  { name: "GÜEMES Y LA CAÑADA", sky: 0x2a1718, fog: 0x2a1718, ground: 0x303326 }
+  { name: "CENTRO HISTÓRICO", sky: 0x3a2537, fog: 0x3a2537, ground: 0x2e3a28, sun: 0xffb37a },
+  { name: "NUEVA CÓRDOBA", sky: 0x2a3d5c, fog: 0x2a3d5c, ground: 0x2e3a28, sun: 0xcfd8ec },
+  { name: "GÜEMES Y LA CAÑADA", sky: 0x1c1620, fog: 0x1c1620, ground: 0x303326, sun: 0xff9a5c }
 ];
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(CONFIG.colors.night);
-scene.fog = new THREE.Fog(0x11151c, 35, 125);
+scene.background = new THREE.Color(LEVELS[0].sky);
+scene.fog = new THREE.Fog(LEVELS[0].fog, 35, 125);
 const camera = new THREE.PerspectiveCamera(58, 1, .1, 180);
 camera.position.set(0, 7.2, 14);
 camera.lookAt(0, 2, -35);
@@ -646,6 +646,7 @@ function applyLevel(index) {
   scene.background.setHex(level.sky);
   scene.fog.color.setHex(level.fog);
   materials.grass.color.setHex(level.ground);
+  if (level.sun) moon.color.setHex(level.sun);
   ui.stage.textContent = `NIVEL ${index + 1} — ${level.name}`;
 }
 
