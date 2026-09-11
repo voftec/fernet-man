@@ -65,3 +65,9 @@ comenzar el nivel siguiente, mientras puntaje, botellas y vidas se conservan.
 Renderizado 3D con Three.js `0.160.0` vía import map CDN, geometría low-poly,
 `PerspectiveCamera`, niebla, iluminación, animaciones procedurales y loop de
 tiempo fijo en JavaScript vanilla.
+
+El personaje es **Rogue (KayKit Adventurers Pack, licencia CC0, Kay Lousberg)**:
+modelo riggeado `models/fernet-man.glb` con 76 animaciones integradas
+(`Running_A`, `Jump_Full_Long`, `Dodge_Forward`, `Hit_A`, `Cheer`, `Death_A`),
+controladas con `AnimationMixer` y crossfades. Los props del pack original no se
+usan (los `handslot` se ocultan al cargar).
