@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { ASSETS } from "./assets.js";
 
 const CONFIG = Object.freeze({
@@ -50,6 +51,9 @@ const moon = new THREE.DirectionalLight(0xffddad, 2.4);
 moon.position.set(-15, 26, 9);
 moon.castShadow = true;
 scene.add(moon);
+const runnerFill = new THREE.PointLight(0xffc27a, 28, 22, 1.8);
+runnerFill.position.set(0, 5.5, 11);
+scene.add(runnerFill);
 
 const materials = {
   road: new THREE.MeshStandardMaterial({ color: CONFIG.colors.asphalt, roughness: .9 }),
@@ -199,6 +203,42 @@ for (const part of Object.values(playerParts)) player.add(part);
 playerParts.shoulders.castShadow = true;
 playerParts.shoulders.receiveShadow = true;
 
+const runnerAnim = { mixer: null, actions: {}, current: null, ready: false };
+function playAnim(name, { loop = true, fade = .18, timeScale = 1 } = {}) {
+  if (!runnerAnim.ready) return;
+  const next = runnerAnim.actions[name];
+  if (!next) return;
+  if (runnerAnim.current === name && (loop || next.isRunning())) return;
+  next.reset();
+  next.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, loop ? Infinity : 1);
+  next.clampWhenFinished = !loop;
+  next.timeScale = timeScale;
+  if (runnerAnim.current && runnerAnim.actions[runnerAnim.current])
+    runnerAnim.actions[runnerAnim.current].crossFadeTo(next, fade, false);
+  next.play();
+  runnerAnim.current = name;
+}
+new GLTFLoader().load("models/fernet-man.glb", (gltf) => {
+  const model = gltf.scene;
+  model.traverse((node) => {
+    if (node.isMesh || node.isSkinnedMesh) {
+      node.castShadow = true;
+      node.frustumCulled = false;
+    }
+    if (/handslot/i.test(node.name)) node.visible = false;
+  });
+  const measure = new THREE.Box3().setFromObject(model);
+  model.scale.setScalar(1.75 / (measure.max.y - measure.min.y));
+  model.updateMatrixWorld(true);
+  model.position.y = -new THREE.Box3().setFromObject(model).min.y;
+  model.rotation.y = Math.PI;
+  player.add(model);
+  for (const part of Object.values(playerParts)) part.visible = false;
+  runnerAnim.mixer = new THREE.AnimationMixer(model);
+  for (const clip of gltf.animations) runnerAnim.actions[clip.name] = runnerAnim.mixer.clipAction(clip);
+  runnerAnim.ready = true;
+});
+
 const state = {
   mode: "title", score: 0, distance: 0, totalDistance: 0, cans: 0, lives: 3, health: 3, speed: CONFIG.initialSpeed,
   lane: 1, targetLane: 1, jumpY: 0, jumpVelocity: 0, slide: 0, dash: 0, invulnerable: 0,
@@ -256,6 +296,8 @@ function resetGame() {
     spawnTimer: 1.1, canTimer: .8, sceneryTimer: 4, runTime: 0, shoutTimer: 8,
     level: 0, nextExtraLife: 25, stumble: 0, timeLeft: CONFIG.levelTime,
     checkpointReached: false, conferenceSpawned: false });
+  runnerAnim.current = null;
+  playAnim("Running_A");
   applyLevel(0);
   player.position.x = 0;
   hideOverlay();
@@ -472,21 +514,31 @@ function update(dt) {
   player.position.x = CONFIG.lanes[Math.round(state.lane)] + (state.lane - Math.round(state.lane)) * 3;
   player.rotation.z = (state.targetLane - state.lane) * -.08;
   player.rotation.x = state.stumble > 0 ? Math.sin(state.stumble * 24) * .2 : 0;
-  const stride = Math.sin(state.runTime * 14) * .42;
-  const slideBlend = state.slide > 0
-    ? Math.min(1, (.72 - state.slide) / .12, state.slide / .12)
-    : 0;
-  playerParts.legL.rotation.x = THREE.MathUtils.lerp(stride, -1.2, slideBlend);
-  playerParts.legR.rotation.x = THREE.MathUtils.lerp(-stride, -1.2, slideBlend);
-  playerParts.armL.rotation.x = THREE.MathUtils.lerp(-stride, 1.1, slideBlend);
-  playerParts.armR.rotation.x = THREE.MathUtils.lerp(stride, 1.1, slideBlend);
-  playerParts.body.scale.y = THREE.MathUtils.lerp(1, .55, slideBlend);
-  playerParts.body.rotation.x = slideBlend * .72;
-  playerParts.shoulders.position.y = THREE.MathUtils.lerp(2.55, 2.05, slideBlend);
-  playerParts.neck.position.y = THREE.MathUtils.lerp(2.84, 2.24, slideBlend);
-  playerParts.head.position.y = THREE.MathUtils.lerp(3.43, 2.55, slideBlend);
-  playerParts.label.position.y = THREE.MathUtils.lerp(1.71, 1.36, slideBlend);
-  playerParts.badge.position.y = THREE.MathUtils.lerp(1.72, 1.38, slideBlend);
+  if (!runnerAnim.ready) {
+    const stride = Math.sin(state.runTime * 14) * .42;
+    const slideBlend = state.slide > 0
+      ? Math.min(1, (.72 - state.slide) / .12, state.slide / .12)
+      : 0;
+    playerParts.legL.rotation.x = THREE.MathUtils.lerp(stride, -1.2, slideBlend);
+    playerParts.legR.rotation.x = THREE.MathUtils.lerp(-stride, -1.2, slideBlend);
+    playerParts.armL.rotation.x = THREE.MathUtils.lerp(-stride, 1.1, slideBlend);
+    playerParts.armR.rotation.x = THREE.MathUtils.lerp(stride, 1.1, slideBlend);
+    playerParts.body.scale.y = THREE.MathUtils.lerp(1, .55, slideBlend);
+    playerParts.body.rotation.x = slideBlend * .72;
+    playerParts.shoulders.position.y = THREE.MathUtils.lerp(2.55, 2.05, slideBlend);
+    playerParts.neck.position.y = THREE.MathUtils.lerp(2.84, 2.24, slideBlend);
+    playerParts.head.position.y = THREE.MathUtils.lerp(3.43, 2.55, slideBlend);
+    playerParts.label.position.y = THREE.MathUtils.lerp(1.71, 1.36, slideBlend);
+    playerParts.badge.position.y = THREE.MathUtils.lerp(1.72, 1.38, slideBlend);
+  } else if (state.stumble > 0) {
+    playAnim("Hit_A", { loop: false });
+  } else if (state.slide > 0) {
+    playAnim("Dodge_Forward", { loop: false });
+  } else if (state.jumpY > .05 || state.jumpVelocity > 0) {
+    playAnim("Jump_Full_Long", { loop: false });
+  } else {
+    playAnim("Running_A");
+  }
   player.visible = state.invulnerable <= 0 || Math.floor(state.invulnerable * 14) % 2 === 0;
 
   for (const stripe of movingWorld.stripes) { stripe.position.z += state.speed * dt; if (stripe.position.z > 8) stripe.position.z -= 160; }
@@ -587,6 +639,7 @@ prewarmPools();
 resize();
 updateHud();
 showOverlay("FERNET MAN", "Tocá para correr");
+if (new URLSearchParams(location.search).has("auto")) resetGame();
 
 function applyLevel(index) {
   const level = LEVELS[index];
@@ -603,7 +656,12 @@ function loop(now) {
   if (state.mode === "running") {
     state.accumulator += elapsed;
     while (state.accumulator >= CONFIG.fixedStep) { update(CONFIG.fixedStep); state.accumulator -= CONFIG.fixedStep; }
+  } else {
+    if (state.mode === "title") playAnim("Idle");
+    else if (state.mode === "won" || state.mode === "levelcomplete") playAnim("Cheer");
+    else if (state.mode === "gameover") playAnim("Death_A", { loop: false });
   }
+  if (runnerAnim.mixer) runnerAnim.mixer.update(elapsed);
   render();
 }
 requestAnimationFrame(loop);
